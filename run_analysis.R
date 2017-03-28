@@ -1,47 +1,61 @@
-library(data.table)
-fileurl = 'https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip'
-if (!file.exists('./UCI HAR Dataset.zip')){
-        download.file(fileurl,'./UCI HAR Dataset.zip', mode = 'wb')
-        unzip("UCI HAR Dataset.zip", exdir = getwd())
-}
+## Set up work directory to the right work directory
 
-features <- read.csv('./UCI HAR Dataset/features.txt', header = FALSE, sep = ' ')
-features <- as.character(features[,2])
+setwd("C:/Daily Mail/R")
 
-data.train.x <- read.table('./UCI HAR Dataset/train/X_train.txt')
-data.train.activity <- read.csv('./UCI HAR Dataset/train/y_train.txt', header = FALSE, sep = ' ')
-data.train.subject <- read.csv('./UCI HAR Dataset/train/subject_train.txt',header = FALSE, sep = ' ')
+## Download the zip file to the right work directory
 
-data.train <-  data.frame(data.train.subject, data.train.activity, data.train.x)
-names(data.train) <- c(c('subject', 'activity'), features)
+## Unzip the downloaded file
 
-data.test.x <- read.table('./UCI HAR Dataset/test/X_test.txt')
-data.test.activity <- read.csv('./UCI HAR Dataset/test/y_test.txt', header = FALSE, sep = ' ')
-data.test.subject <- read.csv('./UCI HAR Dataset/test/subject_test.txt', header = FALSE, sep = ' ')
+unzip("UCI HAR Dataset.zip")
 
-data.test <-  data.frame(data.test.subject, data.test.activity, data.test.x)
-names(data.test) <- c(c('subject', 'activity'), features)
+## Read the test data and train data
 
-data.all <- rbind(data.train, data.test)
+x_test <- read.table("UCI HAR Dataset/test/x_test.txt")
+y_test <- read.table("UCI HAR Dataset/test/y_test.txt")
 
-mean_std.select <- grep('mean|std', features)
-data.sub <- data.all[,c(1,2,mean_std.select + 2)]
+x_train <- read.table("UCI HAR Dataset/train/x_train.txt")
+y_train <- read.table("UCI HAR Dataset/train/y_train.txt")
 
-activity.labels <- read.table('./UCI HAR Dataset/activity_labels.txt', header = FALSE)
-activity.labels <- as.character(activity.labels[,2])
-data.sub$activity <- activity.labels[data.sub$activity]
+## Read the subject data
 
-name.new <- names(data.sub)
-name.new <- gsub("[(][)]", "", name.new)
-name.new <- gsub("^t", "TimeDomain_", name.new)
-name.new <- gsub("^f", "FrequencyDomain_", name.new)
-name.new <- gsub("Acc", "Accelerometer", name.new)
-name.new <- gsub("Gyro", "Gyroscope", name.new)
-name.new <- gsub("Mag", "Magnitude", name.new)
-name.new <- gsub("-mean-", "_Mean_", name.new)
-name.new <- gsub("-std-", "_StandardDeviation_", name.new)
-name.new <- gsub("-", "_", name.new)
-names(data.sub) <- name.new
+subject_test <- read.table("UCI HAR Dataset/test/subject_test.txt")
+subject_train <- read.table("UCI HAR Dataset/train/subject_train.txt")
 
-data.tidy <- aggregate(data.sub[,3:81], by = list(activity = data.sub$activity, subject = data.sub$subject),FUN = mean)
-write.table(x = data.tidy, file = "data_tidy.txt", row.names = FALSE)
+## Read features and activities
+
+features <- read.table("UCI HAR Dataset/features.txt")
+activity <- read.table("UCI HAR Dataset/activity_labels.txt")
+
+## 1.Merges the training and the test sets to create one data set
+
+x <- rbind(x_test, x_train)
+y <- rbind(y_test, y_train)
+whole_data <- cbind(x,y)
+subject<-rbind(subject_test, subject_train)
+
+## 2. Extracts only the measurements on the mean and standard deviation for each measurement
+
+feature_index <- grep("mean\\(\\)|std\\(\\)", features[,2]) 
+feature_data <- features[feature_index,]
+
+## 3.Uses descriptive activity names to name the activities in the data set
+
+y[,1] <- as.character(y[,1])
+activity[,1] <- as.character(activity[,1])
+y[,1] <- activity[y[,1],2]
+
+## 4.Appropriately labels the data set with descriptive variable names
+
+x <- x[,feature_index]
+feature_name <- features[feature_index,2]
+names(x) <-feature_name
+names(subject) <- "Subject"
+names(y)<- "Activity"
+tidy_data <- cbind(subject, y, x)
+
+## 5.From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject
+
+library(plyr)
+output_data <- aggregate(. ~Subject + Activity, tidy_data, mean)
+output_data <- output_data[order(output_data$Subject,output_data$Activity),]
+write.table(output_data, file = "tidydata.txt",row.name=FALSE)
