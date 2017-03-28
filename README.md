@@ -1,42 +1,61 @@
-# Getting-and-Cleaning-Data-Course-Project
+## Set up work directory to the right work directory
 
+setwd("C:/Daily Mail/R")
 
-1. Merges the Training and Testing Sets into 1 data set called data.all
+## Download the zip file to the right work directory
 
-data.all <- rbind(data.train, data.test)
+## Unzip the downloaded file
 
-2. Extracts only the measurements on the mean and standard deviation for each measurement.
+unzip("UCI HAR Dataset.zip")
 
-mean_std.select <- grep('mean|std', features)
-data.sub <- data.all[,c(1,2,mean_std.select + 2)]
+## Read the test data and train data
 
-3. Uses descriptive activity names to name the activities in the data set
+x_test <- read.table("UCI HAR Dataset/test/x_test.txt")
+y_test <- read.table("UCI HAR Dataset/test/y_test.txt")
 
-This is done by reading the labels from the activity_labels.txt file
+x_train <- read.table("UCI HAR Dataset/train/x_train.txt")
+y_train <- read.table("UCI HAR Dataset/train/y_train.txt")
 
-activity.labels <- read.table('./UCI HAR Dataset/activity_labels.txt', header = FALSE)
-activity.labels <- as.character(activity.labels[,2])
-data.sub$activity <- activity.labels[data.sub$activity]
+## Read the subject data
 
-4. Appropriately labels the data set with descriptive variable names.
+subject_test <- read.table("UCI HAR Dataset/test/subject_test.txt")
+subject_train <- read.table("UCI HAR Dataset/train/subject_train.txt")
 
-Replace the names in data set with names from activity labels
+## Read features and activities
 
-name.new <- names(data.sub)
-name.new <- gsub("[(][)]", "", name.new)
-name.new <- gsub("^t", "TimeDomain_", name.new)
-name.new <- gsub("^f", "FrequencyDomain_", name.new)
-name.new <- gsub("Acc", "Accelerometer", name.new)
-name.new <- gsub("Gyro", "Gyroscope", name.new)
-name.new <- gsub("Mag", "Magnitude", name.new)
-name.new <- gsub("-mean-", "_Mean_", name.new)
-name.new <- gsub("-std-", "_StandardDeviation_", name.new)
-name.new <- gsub("-", "_", name.new)
-names(data.sub) <- name.new
+features <- read.table("UCI HAR Dataset/features.txt")
+activity <- read.table("UCI HAR Dataset/activity_labels.txt")
 
-5. From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+## 1.Merges the training and the test sets to create one data set
 
-Tidy data as output as data_tidy.txt file
+x <- rbind(x_test, x_train)
+y <- rbind(y_test, y_train)
+whole_data <- cbind(x,y)
+subject<-rbind(subject_test, subject_train)
 
-data.tidy <- aggregate(data.sub[,3:81], by = list(activity = data.sub$activity, subject = data.sub$subject),FUN = mean)
-write.table(x = data.tidy, file = "data_tidy.txt", row.names = FALSE)
+## 2. Extracts only the measurements on the mean and standard deviation for each measurement
+
+feature_index <- grep("mean\\(\\)|std\\(\\)", features[,2]) 
+feature_data <- features[feature_index,]
+
+## 3.Uses descriptive activity names to name the activities in the data set
+
+y[,1] <- as.character(y[,1])
+activity[,1] <- as.character(activity[,1])
+y[,1] <- activity[y[,1],2]
+
+## 4.Appropriately labels the data set with descriptive variable names
+
+x <- x[,feature_index]
+feature_name <- features[feature_index,2]
+names(x) <-feature_name
+names(subject) <- "Subject"
+names(y)<- "Activity"
+tidy_data <- cbind(subject, y, x)
+
+## 5.From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject
+
+library(plyr)
+output_data <- aggregate(. ~Subject + Activity, tidy_data, mean)
+output_data <- output_data[order(output_data$Subject,output_data$Activity),]
+write.table(output_data, file = "tidydata.txt",row.name=FALSE)
