@@ -1,3 +1,5 @@
+## Variables Name Explaination
+
 x_test <- Test data set for x
 y_test <- Test data set for y
 
@@ -21,3 +23,25 @@ feature_data <- Feature data set for mean and sd
 tidy_data <- All data set combined
 
 output_data <- Final output data set
+
+## Coding Explaination
+
+setwd() <- Set up work directory
+
+unzip() <- Unzip the file
+
+read.table() <- Read txt data
+
+rbind() <- Combine rows
+
+cbind() <- Combine columns
+
+grep() <- Get certain characters
+
+as.character() <- Let variable be character
+
+names() <- Give the column names for data set
+
+aggregate() <- Aggregate data set with certain condition
+
+write.table() <- Output txt file
