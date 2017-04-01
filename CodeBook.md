@@ -45,3 +45,4 @@ names() <- Give the column names for data set
 aggregate() <- Aggregate data set with certain condition
 
 write.table() <- Output txt file
+
